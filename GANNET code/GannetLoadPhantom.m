@@ -66,6 +66,8 @@ else
 end
 MRS_struct.LB=LB;
 MRS_struct.versionload = '110825';
+% CJE set this up and use same GannetFit as in vivo
+MRS_struct.phantom_data=1;
 FreqPhaseAlign=1; %110825
 
 
@@ -313,8 +315,11 @@ for ii=1:numpfiles
 
 
             % CJE March 10 - correct phase of each Water avg independently
-            %WaterData=WaterData.*firstpoint*global_rescale;
-
+            % CJE 5/2/12 need this for GE
+            if(strcmpi(MRS_struct.vendor,'GE'))
+                WaterData=WaterData.*firstpoint*global_rescale;
+            end
+                
             %Multiply the Eightchannel data by the firstpointvector
             % zeroth order phasing of spectra
             % CJE Nov 09: do global rescaling here too
@@ -348,8 +353,8 @@ for ii=1:numpfiles
     
     %raee 111109 Philips data for mona does not have water spectra...
     if(strcmpi(MRS_struct.Reference_compound,'H2O'))
-        figure(14)
-        plot(real(fftshift(fft(WaterData))));
+        %figure(14)
+        %plot(real(fftshift(fft(WaterData))));
         % Finish processing water data.
         if(strcmpi(MRS_struct.vendor,'GE'))
             ComWater = sum(WaterData,2);

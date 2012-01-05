@@ -5,7 +5,7 @@ function F = ThreeGaussModel(x,freq)
 % x(3) = centre freq of peak
 % x(4) = amplitude of linear baseline
 % x(5) = constant amplitude offset
-% x(6) = amplitude middle peak?
+% x(6) = amplitude middle peak
 
 A = 0.058; %originally 5/128
 

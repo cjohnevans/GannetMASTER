@@ -34,7 +34,7 @@ function [MRS_struct] = GannetFit(MRS_struct)
 %111214 integrating CJE's changes on water fitting (pre-init and revert to
 %linear bseline). Also investigating Navg(ii)
 
-
+% 120105
 
 FIT_LSQCURV = 0;
 FIT_NLINFIT = 1;
@@ -74,19 +74,27 @@ for ii=1:numscans
     %MRS_struct.freq(17342)
     %MRS_struct.freq(18000)
     %Hard code it to fit from 2.75 ppm to 3.55 ppm
+    % CJE 5/1/12
     z=abs(MRS_struct.freq-3.55);
     lowerbound=find(min(z)==z);
-    z=abs(MRS_struct.freq-2.75);
-    upperbound=find(min(z)==z);
+    if(MRS_struct.phantom_data)
+        z=abs(MRS_struct.freq-2.25);
+        upperbound=find(min(z)==z);
+    else
+        z=abs(MRS_struct.freq-2.75);
+        upperbound=find(min(z)==z);
+    end
+    
     %lowerbound=17342;
     %upperbound=17961;
     %upperbound=18000;
     freqbounds=lowerbound:upperbound;
     plotbounds=(lowerbound-150):(upperbound+150);
-
-    maxinGABA=max(real(GABAData(freqbounds)));
-    %maxinGABA=1;
-
+    
+    % CJE 120105 find the peak in GABA (height & pos) and initialise with this
+    [maxinGABA, maxinGABApos] = max(real(GABAData(freqbounds)));
+    maxinGABAppm = MRS_struct.freq(maxinGABApos);
+    
     % smarter estimation of baseline params, Krish's idea (taken from Johns
     % code; NAP 121211
     grad_points = (real(GABAData(ii,upperbound)) - real(GABAData(ii,lowerbound))) ./ ...
@@ -101,81 +109,59 @@ for ii=1:numscans
     %residuals=resnorm;
     size(resnorm);
 
-
-    %  GaussModelInit = [10*maxinGABA -90 3.026 0 0];
-    % NP; but taken from Johns code, now initialise with parameters declared above
-    GaussModelInit = [10*maxinGABA -90 3.026 LinearInit constInit]; %default in 110624
-
-    %OLD INITS; WHY NOT CUT THESE OUT (NP)
-    %GaussModelInit = [4.1314 -140.0000 3.0005 -0.8776 0.5684]; %from MINLSQ
-    %GaussModelInit = [1 -140.0000 3.0005 -0.8776 0.5684]; %works
-    %GaussModelInit = [maxinGABA -90 3.026 0 0]; %works
-    %GaussModelInit = [ 1 -90 3.026 0 0]; %fails
-    %GaussModelInit = [ 1 -90 3.026 -0.8776 0.5684]; %works
-
-    lb = [0 -200 2.87 -40*maxinGABA -2000*maxinGABA]; %NP; our bounds are 0.03 less due to creatine shift
-    ub = [4000*maxinGABA -40 3.12 40*maxinGABA 1000*maxinGABA];
-
-
-
+    if(MRS_struct.phantom_data)
+       GaussModelInit = [10*maxinGABA -9000 maxinGABAppm LinearInit constInit 0.5*maxinGABA]; %Initiate three gauss model parameters
+         lb = [0 -15000 2.5 -40*maxinGABA -2000*maxinGABA 0.1];
+        ub = [4000*maxinGABA -40 3.15 40*maxinGABA 1000*maxinGABA 1];
+    else
+        GaussModelInit = [10*maxinGABA -90 3.026 LinearInit constInit]; %default in 110624
+        lb = [0 -200 2.87 -40*maxinGABA -2000*maxinGABA]; %NP; our bounds are 0.03 less due to creatine shift
+        ub = [4000*maxinGABA -40 3.12 40*maxinGABA 1000*maxinGABA];
+    end
+ 
     %NP; From Johns code, initialising steps, just copied over
     options = optimset('lsqcurvefit');
     options = optimset(options,'Display','off','TolFun',1e-10,'Tolx',1e-10,'MaxIter',1e5);
     nlinopts = statset('nlinfit');
     nlinopts = statset(nlinopts, 'MaxIter', 1e5);
 
-
+    % CJE 120105
+    if(MRS_struct.phantom_data)    
+    [GaussModelParam(ii,:),resnorm(ii), residg] = lsqcurvefit(@(xdummy,ydummy) ThreeGaussModel(xdummy,ydummy), ...
+          GaussModelInit, ...
+          freq(freqbounds),...
+          real(GABAData(ii,freqbounds)), ...
+          lb,ub,options);
+    else
     [GaussModelParam(ii,:),resnorm(ii), residg] = lsqcurvefit(@(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
         GaussModelInit, ...
         freq(freqbounds),...
         real(GABAData(ii,freqbounds)), ...
         lb,ub,options);
     residg = -residg;
-
-    if(fit_method == FIT_NLINFIT)
-        %else  % it's FIT_NLINFIT
-        GaussModelInit = GaussModelParam(ii,:);
-        % 1111013 restart the optimisation, to ensure convergence
-
-        for fit_iter = 1:100
+    end
+    GaussModelInit = GaussModelParam(ii,:);
+    % 1111013 restart the optimisation, to ensure convergence
+    
+    for fit_iter = 1:100
+% CJE 120105
+        if(MRS_struct.phantom_data)
+            [GaussModelParam(ii,:), residg, J, COVB, MSE] = nlinfit(freq(freqbounds), real(GABAData(ii,freqbounds)), ...
+                @(xdummy,ydummy) ThreeGaussModel(xdummy,ydummy), ...
+                GaussModelInit, ...
+                nlinopts);
+        else
             [GaussModelParam(ii,:), residg, J, COVB, MSE] = nlinfit(freq(freqbounds), real(GABAData(ii,freqbounds)), ... % J, COBV, MSE edited in
                 @(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
                 GaussModelInit, ...
                 nlinopts);
-            MRS_struct.fitparams_iter(fit_iter,:,ii) = GaussModelParam(ii,:);
-            GaussModelInit = GaussModelParam(ii,:);
-            ci = nlparci(GaussModelParam(ii,:), residg,'covar',COVB); %copied over
         end
+        MRS_struct.fitparams_iter(fit_iter,:,ii) = GaussModelParam(ii,:);
+        GaussModelInit = GaussModelParam(ii,:);
+        ci = nlparci(GaussModelParam(ii,:), residg,'covar',COVB); %copied over
     end
     %NP end copy Johns code
-
-
-    %NP; This bit below is now stated above, make sure our own changes are copied in as well
-    %Bit below copied out
-    %   if(fit_method == FIT_LSQCURV)
-    %
-    %       options = optimset('lsqcurvefit');
-    %       options = optimset(options,'Display','off','TolFun',1e-10,'Tolx',1e-10,'MaxIter',1e5);
-    %
-    %       % pass function handle to GaussModel to lsqcurvefit
-    %       [GaussModelParam(ii,:),resnorm(ii), residg] = lsqcurvefit(@(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
-    %           GaussModelInit, ...
-    %           freq(freqbounds),...
-    %           real(GABAData(ii,freqbounds)), ...
-    %           lb,ub,options);
-    %       residg = -residg;
-    %
-    %   else  % it's FIT_NLINFIT
-    %       nlinopts = statset('nlinfit');
-    %       nlinopts = statset(nlinopts, 'MaxIter', 1e5);
-    %
-    %       [GaussModelParam(ii,:), residg,J,COVB,MSE] = nlinfit(freq(freqbounds), real(GABAData(ii,freqbounds)), ...
-    %           @(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
-    %           GaussModelInit, ...
-    %           nlinopts);
-    %       ci = nlparci(GaussModelParam(ii,:), residg,'covar',COVB)
-    %   end
-    %
+    
     GABAheight = GaussModelParam(ii,1);
     % FitSTD reports the standard deviation of the residuals / gaba HEIGHT
     %MRS_struct.GABAFitError(ii)  =  (ci(1,2)-ci(1,1))/sum(ci(1,:),2)*100;
@@ -185,12 +171,17 @@ for ii=1:numscans
     % area under gaussian is a * (2 * pi * sigma^2)^(1/2), and
     % GaussModelParam(:,2) = 1 / (2 * sigma^2)
     % This sets GabaArea as the area under the curve.
-    MRS_struct.gabaArea(ii)=GaussModelParam(ii,1)./sqrt(-GaussModelParam(ii,2))*sqrt(pi);
-
+    % CJE 120105
+    if(MRS_struct.phantom_data)
+        MRS_struct.gabaArea(ii)= 2* GaussModelParam(ii,1)./sqrt(-GaussModelParam(ii,2))*sqrt(pi) + ...
+            GaussModelParam(ii,6)./sqrt(-GaussModelParam(ii,2))*sqrt(pi);
+    else
+        MRS_struct.gabaArea(ii)=GaussModelParam(ii,1)./sqrt(-GaussModelParam(ii,2))*sqrt(pi);
+    end
     sigma = ( 1 / (2 * (abs(GaussModelParam(ii,2)))) ).^(1/2);
     MRS_struct.GABAFWHM(ii) =  abs( (2* 42.576*3) * sigma);
     MRS_struct.GABAModelFit(ii,:)=GaussModelParam(ii,:);
-
+    
     if(ishandle(102))
         close(102)
     end
@@ -205,15 +196,24 @@ for ii=1:numscans
     %  resid = -resid;   % set resid to data-fit rather than fit-data
     resmax = max(residg);
     residg = residg + gabamin - resmax;
-    plot(freq(freqbounds),GaussModel_area(GaussModelParam(ii,:),freq(freqbounds)),'r',...
-        freq(plotbounds),real(GABAData(ii,plotbounds)), 'b', ...
-        freq(freqbounds),residg,'b');
+    if(MRS_struct.phantom_data)
+        plot(freq(freqbounds),ThreeGaussModel(GaussModelParam(ii,:),freq(freqbounds)),'r',...
+            freq(plotbounds),real(GABAData(ii,plotbounds)), 'b', ...
+            freq(freqbounds),residg,'b');
+        oldaxis = axis;
+        axis( [2.2 3.6 oldaxis(3) oldaxis(4) ] )
+    else
+        plot(freq(freqbounds),GaussModel_area(GaussModelParam(ii,:),freq(freqbounds)),'r',...
+            freq(plotbounds),real(GABAData(ii,plotbounds)), 'b', ...
+            freq(freqbounds),residg,'b');
+        oldaxis = axis;
+        axis( [2.6 3.6 oldaxis(3) oldaxis(4) ] )
+    end
+    
     legendtxt = regexprep(MRS_struct.pfile{ii}, '_','-');
     title(legendtxt);
     set(gca,'XDir','reverse');
     %set(gca,'YTick',[], 'Xgrid', 'on');
-    oldaxis = axis;
-    axis( [2.6 3.6 oldaxis(3) oldaxis(4) ] )
 
     %     R2(ii)=1-(resnorm(ii,1)/norm(real(GABAData(freqbounds))-mean(real(GABAData(freqbounds))))^2);
     %     GaussModelParam(ii,1)./sqrt(-GaussModelParam(ii,2))*sqrt(pi);
@@ -387,9 +387,7 @@ for ii=1:numscans
         %generate scaled spectrum (for plotting) CJE Jan2011
         MRS_struct.gabaspec_scaled(ii,:) = MRS_struct.gabaspec(ii,:) .* ...
             repmat((1 ./ MRS_struct.waterArea(ii)), [1 32768]);
-
         [MRS_struct]=MRSGABAinstunits(MRS_struct, ii);
-
 
 
         %THIS IS VERY MESSY BUT WORKS FOR NOW (NP 17-11-11) needs to be integrated
@@ -409,8 +407,6 @@ for ii=1:numscans
         h2=subplot(2, 2, 4);
         plot(freqrange,real(Cr_OFF(lb:ub)));
         %Then use the same function as the Cr Fit in GannetLoad
-        
-
 
         nlinopts=statset('nlinfit');
         nlinopts = statset(nlinopts, 'MaxIter', 1e5, 'Display','Off');
@@ -500,6 +496,8 @@ for ii=1:numscans
         xlim([2.6 3.6]);
 
     end
+    
+    
     % GABA fitting information
     if(MRS_struct.FreqPhaseAlign)
         tmp2 = '1';

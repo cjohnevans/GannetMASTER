@@ -67,6 +67,7 @@ else
 end
 MRS_struct.LB=LB;
 MRS_struct.versionload = '111214';
+MRS_struct.phantom_data = 0;
 FreqPhaseAlign=1; %110825
 
 
