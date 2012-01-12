@@ -124,7 +124,7 @@ for ii=1:numpfiles
     
     % 110825
         if(strcmpi(MRS_struct.vendor,'Siemens'))
-                    %Need to set Water_Positive based on water signal
+             %Need to set Water_Positive based on water signal
             %This is a start, but is not yet there...
             if(exist('waterfile'))    
                 MRS_struct.Reference_compound='H2O';
@@ -399,8 +399,7 @@ for ii=1:numpfiles
         [FrameMax, FrameMaxPos] = max(AllFramesFT, [], 1);
         % align all peaks to _first_ transient (should be closest value set during Prescan)
         FrameShift = FrameMaxPos - FrameMaxPos(1);
-        
-        
+                       
         if(strcmpi(MRS_struct.vendor,'Philips_data'))     
            for jj=1:totalframes
          	 AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -FrameShift(jj));
@@ -521,6 +520,8 @@ for ii=1:numpfiles
             else
                 phase=0;
             end
+            
+             
             phase;
             %CrSumSpec = CrSumSpec(lb:ub);
             CrSumSpec = sum(AllFramesFT(lb:ub,:),2)*exp(1i*pi/180*(phase));
