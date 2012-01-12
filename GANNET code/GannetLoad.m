@@ -1,4 +1,4 @@
-function [MRS_struct] = GannetLoad(temppfile, waterfile)
+function [MRS_struct] = GannetLoad(temppfile, waterfile, FreqPhaseAlign)
 %function [MRS_struct] = MRSLoadPfiles110825(temppfile, waterfile)
 %function [MRS_struct] = MRSLoadPfiles110825(pfiles, FreqPhaseAlign)
 % CJE110825.  Loads P files for analysis
@@ -67,7 +67,7 @@ else
 end
 MRS_struct.LB=LB;
 MRS_struct.versionload = '111214';
-FreqPhaseAlign=1; %110825
+%FreqPhaseAlign=1; %110825
 
 
 
@@ -538,7 +538,14 @@ for ii=1:numpfiles
             Cr_initx(1) = Cr_initx(1)/size(AllFramesFT,2);
             Cr_initx(5) = 0;
             %       Cr_initx(6) = 0;
-
+            % CJE 120112
+            % realign Cr  alignment not done
+            CrSumPhaseShift = Cr_initx(4);
+            CrSumFreqShift = Cr_initx(3);
+            CrSumFreqShift = CrSumFreqShift - 3.03*LarmorFreq;
+            CrSumFreqShift = CrSumFreqShift ./ (3*42.58*(MRS_struct.freq(2) - MRS_struct.freq(1) ));
+            CrSumFreqShift = round(CrSumFreqShift);
+            
             MRS_struct.Cr_area(ii) = Cr_initx(1);
             MRS_struct.Cr_freq(ii) = Cr_initx(3);
             MRS_struct.fwhmHz(ii) = Cr_initx(2);
@@ -653,7 +660,14 @@ for ii=1:numpfiles
                 end
             else
                 % no realignment
-                AllFramesFTrealign=AllFramesFT;
+                % CJE 120112.  Rephase and align Cr sum, even if not
+                % aligning shot by shot
+                  for jj=1:totalframes
+                    AllFramesFTrealign(:,jj)=AllFramesFT(:,jj) * exp(1i * -CrSumPhaseShift * pi /180);
+                    AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -CrSumFreqShift); %Cr peak realignment
+                    %	 AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -CrFreqShift_points(jj)); %Cr peak realignment
+                    %	 AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -FrameShift(jj)); %Water peak realignment
+                  end
                 OddFramesFTrealign=AllFramesFT(:,1:2:end);
                 EvenFramesFTrealign=AllFramesFT(:,2:2:end);
                 numreject = -1;
