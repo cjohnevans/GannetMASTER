@@ -337,7 +337,7 @@ for ii=1:numpfiles
             % sum over Rx channels
             FullData = squeeze(sum(FullData,1));
             WaterData = squeeze(sum(WaterData,1));
-            MRS_struct.waterdata=WaterData;
+           %MRS_struct.waterdata=WaterData;
             MRS_struct.sw = 5000;  %should really pick this up from the header
             %%%%%% end of GE specific load
 
@@ -646,12 +646,16 @@ for ii=1:numpfiles
                     end
                 end
                 numreject = 2 * sum(rejectframes); % ON and OFF get rejected
-
-
-
+                
+                figure(5); plot(real(AllFramesFTrealign(17700:18000,1:2:10)));
+                title('ON')
+                figure(6); plot(real(AllFramesFTrealign(17700:18000,2:2:10)));
+                title('OFF')
+                
                 for jj=1:(totalframes/2)
                     AllFramesFTrealign(:,(2*jj-1)) = OddFramesFTrealign(1:end, jj);
                 end
+                
                 if(strcmpi(MRS_struct.vendor,'Philips_data'))
                     MRS_struct.Navg(ii) = MRS_struct.Navg(ii)*MRS_struct.nrows - numreject*MRS_struct.nrows; %need to check up on both Philips RE 121214
                 elseif(strcmpi(MRS_struct.vendor,'Philips_sdat'))
@@ -713,7 +717,7 @@ for ii=1:numpfiles
         MRS_struct.phase(ii) = 0; % initial zeroth order phase
         MRS_struct.phase_firstorder(ii) = 0; % initial 1st order phase
         MRS_struct.FreqPhaseAlign = FreqPhaseAlign; %frame-by-frame f align
-        MRS_struct.EvenFrames = EvenFramesFTrealign;
+        %MRS_struct.EvenFrames = EvenFramesFTrealign;
         MRS_struct.Rejects(ii) = numreject;
         
         if(ishandle(101))
