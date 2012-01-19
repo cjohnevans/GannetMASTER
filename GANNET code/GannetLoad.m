@@ -556,7 +556,10 @@ for ii=1:numpfiles
 
                 %need to rescale area for 1 frame bit messy -
                 % convert back to  ppm, rads for new initialiser
-                conv = [1 1/(2*42.576*3) 1/(42.576*3) (pi/180) 1 1 ];
+                % CJE 120118 - correct linear baseline too. without this
+                % the linear component can dominate
+                % conv = [1 1/(2*42.576*3) 1/(42.576*3) (pi/180) 1 1 ];
+                conv = [1 1/(2*42.576*3) 1/(42.576*3) (pi/180) 1 1/size(AllFramesFT,2) ];
                 Cr_initx = Cr_initx .* conv;
 
                 % Water peak freq shift estimation

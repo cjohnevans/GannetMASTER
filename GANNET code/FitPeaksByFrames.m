@@ -10,24 +10,35 @@
     nframes = size(FrameData,2);
     
     for jj = 1:nframes
-     
+        %cje 120118 - align failure tracing...
+        %figure(3)
+        %fit_plot = LorentzModel(initx, freq);
+        %plot(freq', real(FrameData(:,jj)), 'g', freq', fit_plot,'b');
+        %title(['INIT LSQ frame ' num2str(jj)])
+        
         %120112 cje
         %add lsqcurvefit initialisation here too
         [fit_param, resnorm, resid, exitflag ]  = ...
             lsqcurvefit(@(xdummy,ydummy) LorentzModel(xdummy, ydummy), initx, ...
         		  freq', real(FrameData(:,jj)));
-        initx = fit_param;
+              initxLSQ = fit_param;
+        
+%        figure(4)
+%        fit_plot = LorentzModel(initxLSQ, freq);
+%        plot(freq', real(FrameData(:,jj)), 'g', freq', fit_plot,'b');
+%        title(['INIT NLIN frame ' num2str(jj)])
+      
         
         [fit_param, residCr] = nlinfit(freq', real(FrameData(:,jj)), ...
             @(xdummy, ydummy) LorentzModel(xdummy, ydummy), ...
-            initx, nlinopts);
+            initxLSQ, nlinopts);
         FitParams(jj,:) = fit_param;
         % 110715 remove linear baseline - think this helps...
-        %fit_plot = LorentzModel(fit_param, freq);
-        fit_plot = LorentzModel_nolinear(fit_param, freq);
-        
-          %figure(3); plot(freq', real(FrameData(:,jj)), 'g', freq', fit_plot,'b');
-          %pause(2)
+        fit_plot = LorentzModel(fit_param, freq);
+        %fit_plot = LorentzModel_nolinear(fit_param, freq);
+%          figure(5); plot(freq', real(FrameData(:,jj)), 'g', freq', fit_plot,'b');
+%          title(['FIT frame ' num2str(jj)])
+%          input('aa')
         %set(gca,'XDir','reverse');
         %  input('next')
     end
