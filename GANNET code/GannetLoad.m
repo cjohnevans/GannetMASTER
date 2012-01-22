@@ -650,14 +650,26 @@ for ii=1:numpfiles
                 end
                 numreject = 2 * sum(rejectframes); % ON and OFF get rejected
                 
-                figure(5); plot(real(AllFramesFTrealign(17700:18000,1:2:10)));
-                title('ON')
-                figure(6); plot(real(AllFramesFTrealign(17700:18000,2:2:10)));
-                title('OFF')
-                
                 for jj=1:(totalframes/2)
                     AllFramesFTrealign(:,(2*jj-1)) = OddFramesFTrealign(1:end, jj);
                 end
+                
+                figure(5); 
+                subplot(2,2,1)
+                plot(real(AllFramesFT(17500:17900,1:2:end)));
+                title('ON no align')
+                subplot(2,2,2)
+                plot(real(AllFramesFT(17500:17900,2:2:end)));
+                title('OFF no align')
+                subplot(2,2,3)
+                plot(real(AllFramesFTrealign(17500:17900,1:2:end)));
+                title('ON Realign')
+                subplot(2,2,4)
+               plot(real(AllFramesFTrealign(17500:17900,2:2:end)));
+                title('OFF Realign')
+                
+                
+                
                 
                 if(strcmpi(MRS_struct.vendor,'Philips_data'))
                     MRS_struct.Navg(ii) = MRS_struct.Navg(ii)*MRS_struct.nrows - numreject*MRS_struct.nrows; %need to check up on both Philips RE 121214
