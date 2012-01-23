@@ -66,7 +66,7 @@ else
     MRS_struct.Reference_compound='Cr';
 end
 MRS_struct.LB=LB;
-MRS_struct.versionload = '111214';
+MRS_struct.versionload = '120123_FitAllFrames';
 %FreqPhaseAlign=1; %110825
 
 
@@ -572,87 +572,72 @@ for ii=1:numpfiles
                 % align all peaks to _first_ transient (should be closest value set during Prescan)
                 FrameShift = FrameMaxPos - FrameMaxPos(1);
 
-                % 110715. only fit the OFF frames
-                %Cr_frames = AllFramesFT(lb:ub,:);
-                Cr_frames_OFF = AllFramesFT(lb:ub,2:2:end);
+                % CJE 120123.  Split ON and OFF frames, but fit both
+                Cr_framesON = AllFramesFT(lb:ub,1:2:end);
+                Cr_framesOFF = AllFramesFT(lb:ub,2:2:end);
+                                
+                [CrFitParams, rejectframesON] = FitPeaksByFrames(freqrange, Cr_framesON, Cr_initx);
+                CrFreqShiftON = CrFitParams(:,3);
+                CrPhaseShiftON = CrFitParams(:,4);
 
-                % 110715 - only fit OFF frames
-                [CrFitParams, rejectframes] = FitPeaksByFrames(freqrange, Cr_frames_OFF, Cr_initx);
-                %    [CrFitParams, rejectframes] = FitPeaksByFrames(freqrange, AllFramesFT(lb:ub,:), Cr_initx);
-                CrFreqShift = CrFitParams(:,3);
+                [CrFitParams, rejectframesOFF] = FitPeaksByFrames(freqrange, Cr_framesOFF, Cr_initx);
+                CrFreqShiftOFF = CrFitParams(:,3);
+                CrPhaseShiftOFF = CrFitParams(:,4);
+
+                CrFreqShift = [CrFreqShiftON'; CrFreqShiftOFF'];
+                CrFreqShift = reshape(CrFreqShift, numel(CrFreqShift), 1);
+                
                 CrFreqShift = CrFreqShift - 3.03*LarmorFreq;
                 CrFreqShift = CrFreqShift ./ (3*42.58*(MRS_struct.freq(2) - MRS_struct.freq(1) ));
                 CrFreqShift_points = round(CrFreqShift);
 
-                % average over ON and OFF spectra - otherwise there is a net freq shift of ON relative to
-                %  Off, causing a subtraction error 110310 CJE
-                %CrFreqShift_avg = reshape(CrFreqShift, [2 (numel(CrFreqShift)/2) ]);
-                %CrFreqShift_avg = mean(CrFreqShift_avg, 1);
-                %CrFreqShift_avg = repmat(CrFreqShift_avg, [2 1]);
-                %CrFreqShift_avg = round(reshape(CrFreqShift_avg, [ (numel(CrFreqShift_avg)) 1 ]));
-                %CrPhaseShift = CrFitParams(:,4);
-                %110715 CJE
-                % ON spectra are much more variable in baseline - use only OFFs for
-                % freq and phase correction
-                size(CrFreqShift);
-                CrFreqShift_avg = repmat(CrFreqShift', [2 1]);
-                CrFreqShift_avg = round(reshape(CrFreqShift_avg, [ (numel(CrFreqShift_avg)) 1 ]));
-                %figure(5); plot(CrFreqShift_avg','o-');
-                CrPhaseShift = CrFitParams(:,4);
+                CrPhaseShift =  [CrPhaseShiftON'; CrPhaseShiftOFF'];
+                CrPhaseShift = reshape(CrPhaseShift, numel(CrPhaseShift), 1);
+                
+                rejectframes = [rejectframesON; rejectframesOFF];
+                rejectframes = reshape(rejectframes, numel(rejectframes),1);
+                
+                
                 MRS_struct.phase(ii)= mean(CrPhaseShift);
-                CrPhaseShift = repmat(CrPhaseShift, [2 1 ]);
-                CrPhaseShift = reshape(CrPhaseShift, [ (numel(CrPhaseShift)) 1 ]);
-                size(CrFreqShift_avg);
 
                 for jj=1:totalframes
                     AllFramesFTrealign(:,jj)=AllFramesFT(:,jj) * exp(1i * -CrPhaseShift(jj) * pi /180);
-                    AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -CrFreqShift_avg(jj)); %Cr peak realignment
-                    %	 AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -CrFreqShift_points(jj)); %Cr peak realignment
-                    %	 AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -FrameShift(jj)); %Water peak realignment
+                    AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -CrFreqShift_points(jj)); %Cr peak realignment
                 end
 
                 % Need to recalculate these from the f, phase corrected versions...
                 OddFramesFTrealign=AllFramesFTrealign(:,1:2:end);
                 EvenFramesFTrealign=AllFramesFTrealign(:,2:2:end);
-
-                % CJE 110303: OutlierReject
-                % reject based on water fit (not Cr)
-                %	 frequpper = mean(MRS_struct.waterfreq(ii,:)) + 3*std(MRS_struct.waterfreq(ii,:));
-                %	 freqlower = mean(MRS_struct.waterfreq(ii,:)) - 3*std(MRS_struct.waterfreq(ii,:));
-                %	 size(MRS_struct.waterfreq(ii,:))
-                %	 frequpper = repmat(frequpper, [1 totalframes]);
-                %	 freqlower = repmat(freqlower, [1 totalframes]);
-
+                
                 lastreject = -1;
                 numreject=0;
-                %    for jj=1:totalframes
-                %      if rejectframes(jj)
-                % work out the ON_OFF pair to reject
-                % set to zero - will come out in the wash after SUM, DIFF
-                %	pairnumber = round(jj/2);
-                %	if(pairnumber ~= lastreject) %trap condition where ON and OFF in a pair are rejected
-                %	  OddFramesFTrealign(1:end, pairnumber) = 0;
-                %	  EvenFramesFTrealign(1:end, pairnumber) = 0;
-                %	       AllFramesFTrealign(1:end, (2*pairnumber-1):(2*pairnumber)) = 0;
-                %	  lastreject = pairnumber;
-                %	  numreject = numreject + 2;
-                %	end
-                %      end
-                %    end
-
-                % 110715 New reject - only fit OFF (second frame in 'pair')
-                for pairnumber=1:(totalframes/2)
-                    if rejectframes(pairnumber)
-                        OddFramesFTrealign(1:end, pairnumber) = 0;
-                        EvenFramesFTrealign(1:end, pairnumber) = 0;
-                        AllFramesFTrealign(:,(2*pairnumber)) =  EvenFramesFTrealign(1:end, pairnumber);
+                for jj=1:totalframes
+                    if rejectframes(jj)
+                        % work out the ON_OFF pair to reject
+                        % set to zero - will come out in the wash after SUM, DIFF
+                        pairnumber = round(jj/2);
+                        if(pairnumber ~= lastreject) %trap condition where ON and OFF in a pair are rejected
+                            OddFramesFTrealign(1:end, pairnumber) = 0;
+                            EvenFramesFTrealign(1:end, pairnumber) = 0;
+                            AllFramesFTrealign(1:end, (2*pairnumber-1):(2*pairnumber)) = 0;
+                            lastreject = pairnumber;
+                            numreject = numreject + 2;
+                        end
                     end
                 end
-                numreject = 2 * sum(rejectframes); % ON and OFF get rejected
                 
-                for jj=1:(totalframes/2)
-                    AllFramesFTrealign(:,(2*jj-1)) = OddFramesFTrealign(1:end, jj);
-                end
+                
+                %Adjust ON and OFF reference freq by difference in Choline
+                %fit (not affected by ON OFF)
+                %CJE 120123 also fit Cho
+                ChoRange = MRS_struct.freq(17500:17720);
+                ChoONSpec = sum(OddFramesFTrealign, 2);
+                ChoOFFSpec = sum(EvenFramesFTrealign, 2);
+                ChoONSpecFit = FitPeaksByFrames(ChoRange, ChoONSpec(17500:17720), Cr_initx);
+                ChoOFFSpecFit = FitPeaksByFrames(ChoRange, ChoOFFSpec(17500:17720), Cr_initx);
+                figure(9); plot(MRS_struct.freq, ChoONSpec,MRS_struct.freq , ChoOFFSpec)
+                Cho_df = [ChoONSpecFit(3) ChoOFFSpecFit(3) ] 
+                
                 
                 figure(5); 
                 subplot(2,2,1)
@@ -667,9 +652,6 @@ for ii=1:numpfiles
                 subplot(2,2,4)
                plot(real(AllFramesFTrealign(17500:17900,2:2:end)));
                 title('OFF Realign')
-                
-                
-                
                 
                 if(strcmpi(MRS_struct.vendor,'Philips_data'))
                     MRS_struct.Navg(ii) = MRS_struct.Navg(ii)*MRS_struct.nrows - numreject*MRS_struct.nrows; %need to check up on both Philips RE 121214
@@ -748,21 +730,11 @@ for ii=1:numpfiles
         %figure(53)
         subplot(2,2,2)
         if(FreqPhaseAlign)
-                        if(strcmpi(MRS_struct.vendor,'Philips_data'))
+            if(strcmpi(MRS_struct.vendor,'Philips_data'))
                 % 110825 - don't worry about this, for the moment
                 plot([1:DataSize], MRS_struct.waterfreq(ii,:)');
             else
-                %rejectframe NP to get the red circles back
-                gg = 1;
-                hh = 1;
-                for ee = 1:length(rejectframes)  % for 1 to 166 (size waterfreq)
-                    rejectframeAP(hh) = rejectframes(gg); %rejectframeAP(1) = rejectframe(1)
-                    rejectframeAP(hh+1) = 0; %rejectframeAP(2) = 0
-                    hh=hh+2; %HH becomes 3
-                    gg=gg+1; %ii becomes 2
-                end
-
-                rejectframesplot = (1./rejectframeAP) .*  MRS_struct.waterfreq(ii,:);
+                rejectframesplot = (1./rejectframes)' .*  MRS_struct.waterfreq(ii,:);
                 plot([1:DataSize], MRS_struct.waterfreq(ii,:)', '-', [1:DataSize], rejectframesplot, 'ro');
             end
         else
