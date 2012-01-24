@@ -606,7 +606,7 @@ for ii=1:numpfiles
                 end
 
                 % Need to recalculate these from the f, phase corrected versions...
-                OddFramesFTrealign=AllFramesFTrealign(:,1:2:end);
+               OddFramesFTrealign=AllFramesFTrealign(:,1:2:end);
                 EvenFramesFTrealign=AllFramesFTrealign(:,2:2:end);
                 
                 lastreject = -1;
@@ -630,29 +630,96 @@ for ii=1:numpfiles
                 %Adjust ON and OFF reference freq by difference in Choline
                 %fit (not affected by ON OFF)
                 %CJE 120123 also fit Cho
-                ChoRange = MRS_struct.freq(17500:17720);
+                z=abs(MRS_struct.freq-3.3);
+                lbcho=find(min(z)==z);
+                z=abs(MRS_struct.freq-3.15);
+                ubcho=find(min(z)==z);
+                ChoRange = MRS_struct.freq(lbcho:ubcho);
                 ChoONSpec = sum(OddFramesFTrealign, 2);
                 ChoOFFSpec = sum(EvenFramesFTrealign, 2);
-                ChoONSpecFit = FitPeaksByFrames(ChoRange, ChoONSpec(17500:17720), Cr_initx);
-                ChoOFFSpecFit = FitPeaksByFrames(ChoRange, ChoOFFSpec(17500:17720), Cr_initx);
-                figure(9); plot(MRS_struct.freq, ChoONSpec,MRS_struct.freq , ChoOFFSpec)
-                Cho_df = [ChoONSpecFit(3) ChoOFFSpecFit(3) ] 
+                figure(13); subplot(2,1,1)
+                plot(MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho) , real(ChoOFFSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)-ChoOFFSpec(lbcho:ubcho)))
+                title ('pre Cho Tweak')
+                   set(gca,'XDir','reverse');
+             
                 
+                %Cho_initx = [10 0.05 3.2 0 0 0 ];
+                %ChoONSpecFit = FitPeaksByFrames(ChoRange, ChoONSpec(lbcho:ubcho), Cho_initx);
+                %ChoOFFSpecFit = FitPeaksByFrames(ChoRange, ChoOFFSpec(lbcho:ubcho), Cho_initx);
+                %MRS_struct.ChoONSpec = ChoONSpec;
+                %MRS_struct.ChoOFFSpec = ChoOFFSpec;
                 
+                %%% Cho Realign Tweak - DOES NOT WORK FOR ALL %%%
+                
+                % CJE 120124 Based on the Choline phase, adjust the average phase
+                % of the ON spectra to match OFF - sub artefact
+                %Cho_ON_freqoffset =  (ChoOFFSpecFit(3) - ChoONSpecFit(3)) ./ ...
+                %    (3*42.58*(MRS_struct.freq(2) - MRS_struct.freq(1) ))
+                %Cho_ON_freqoffset = round(Cho_ON_freqoffset)
+                %Cho_ON_phaseoffset  = ChoOFFSpecFit(4) - ChoONSpecFit(4)
+                
+                % No tweak
+                %Cho_ON_freqoffset =0; Cho_ON_phaseoffset=0;
+                
+                %for jj=1:2:totalframes
+                %    AllFramesFTrealign(:,jj) = AllFramesFTrealign(:,jj) * ...
+                %        exp(1i * Cho_ON_phaseoffset * pi /180);
+                %     AllFramesFTrealign(:,jj)=circshift(AllFramesFTrealign(:,jj), ...
+                %         Cho_ON_freqoffset); 
+                %end
+                %OddFramesFTrealign=AllFramesFTrealign(:,1:2:end);
+                %EvenFramesFTrealign=AllFramesFTrealign(:,2:2:end);
+                %ChoONSpec = sum(OddFramesFTrealign, 2);
+                %ChoOFFSpec = sum(EvenFramesFTrealign, 2);
+                %%% Cho Realign Tweak %%%
+ 
+                % Realign ONs by minimising the sum of squares difference
+                % between mean ON and mean OFF spectra - effectively
+                % minimising the subtraction artefact
+                offsetInit = [0 0];
+                anonChoVar = @(offsetFP) ChoVariance_ON_OFF(offsetFP, ChoONSpec, ChoOFFSpec);
+                [offsetFP, fval] = fminunc(anonChoVar, offsetInit)
+                Cho_freq_offset = offsetFP(1)
+                Cho_phase_offset = offsetFP(2)
+                
+                for jj=1:2:totalframes
+                    AllFramesFTrealign(:,jj) = AllFramesFTrealign(:,jj) * ...
+                        exp(1i * Cho_phase_offset * pi /180);
+                     AllFramesFTrealign(:,jj)=fshift(AllFramesFTrealign(:,jj), ...
+                         Cho_freq_offset); 
+                end
+                OddFramesFTrealign=AllFramesFTrealign(:,1:2:end);
+                EvenFramesFTrealign=AllFramesFTrealign(:,2:2:end);
+                ChoONSpec = sum(OddFramesFTrealign, 2);
+                ChoOFFSpec = sum(EvenFramesFTrealign, 2);
+
+               figure(13); subplot(2,1,2)
+                plot(MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho) , real(ChoOFFSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)-ChoOFFSpec(lbcho:ubcho)))
+                title ('post Cho Tweak')
+                                set(gca,'XDir','reverse');
+
                 figure(5); 
                 subplot(2,2,1)
                 plot(real(AllFramesFT(17500:17900,1:2:end)));
                 title('ON no align')
+                set(gca,'XDir','reverse');
                 subplot(2,2,2)
                 plot(real(AllFramesFT(17500:17900,2:2:end)));
                 title('OFF no align')
+                set(gca,'XDir','reverse');
                 subplot(2,2,3)
                 plot(real(AllFramesFTrealign(17500:17900,1:2:end)));
                 title('ON Realign')
+                set(gca,'XDir','reverse');
                 subplot(2,2,4)
                plot(real(AllFramesFTrealign(17500:17900,2:2:end)));
                 title('OFF Realign')
-                
+                set(gca,'XDir','reverse');
+
                 if(strcmpi(MRS_struct.vendor,'Philips_data'))
                     MRS_struct.Navg(ii) = MRS_struct.Navg(ii)*MRS_struct.nrows - numreject*MRS_struct.nrows; %need to check up on both Philips RE 121214
                 elseif(strcmpi(MRS_struct.vendor,'Philips_sdat'))
@@ -716,7 +783,7 @@ for ii=1:numpfiles
         MRS_struct.FreqPhaseAlign = FreqPhaseAlign; %frame-by-frame f align
         %MRS_struct.EvenFrames = EvenFramesFTrealign;
         MRS_struct.Rejects(ii) = numreject;
-        
+                
         if(ishandle(101))
             close(101)
         end
