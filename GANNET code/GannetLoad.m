@@ -642,6 +642,72 @@ for ii=1:numpfiles
                 end
                 numreject = 2 * sum(rejectframes); % ON and OFF get rejected
 
+        % CJE 120126 Choline Tweak Start %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                %Adjust ON and OFF reference freq by difference in Choline
+                %fit (not affected by ON OFF)
+                %CJE 120123 also fit Cho
+                z=abs(MRS_struct.freq-3.3);
+                lbcho=find(min(z)==z);
+                z=abs(MRS_struct.freq-3.15);
+                ubcho=find(min(z)==z);
+                ChoRange = MRS_struct.freq(lbcho:ubcho);
+                ChoONSpec = sum(OddFramesFTrealign, 2);
+                ChoOFFSpec = sum(EvenFramesFTrealign, 2);
+                figure(13); subplot(2,1,1)
+                plot(MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho) , real(ChoOFFSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)-ChoOFFSpec(lbcho:ubcho)))
+                title ('pre Cho Tweak')
+                   set(gca,'XDir','reverse');
+             
+                % Realign ONs by minimising the sum of squares difference
+                % between mean ON and mean OFF spectra - effectively
+                % minimising the subtraction artefact
+                offsetInit = [0 0];
+                anonChoVar = @(offsetFP) ChoVariance_ON_OFF(offsetFP, ChoONSpec, ChoOFFSpec);
+                [offsetFP, fval] = fminunc(anonChoVar, offsetInit)
+                Cho_freq_offset = offsetFP(1)
+                Cho_phase_offset = offsetFP(2)
+                
+                for jj=1:2:totalframes
+                    AllFramesFTrealign(:,jj) = AllFramesFTrealign(:,jj) * ...
+                        exp(1i * Cho_phase_offset * pi /180);
+                     AllFramesFTrealign(:,jj)=fshift(AllFramesFTrealign(:,jj), ...
+                         Cho_freq_offset); 
+                end
+                OddFramesFTrealign=AllFramesFTrealign(:,1:2:end);
+                EvenFramesFTrealign=AllFramesFTrealign(:,2:2:end);
+                ChoONSpec = sum(OddFramesFTrealign, 2);
+                ChoOFFSpec = sum(EvenFramesFTrealign, 2);
+
+               figure(13); subplot(2,1,2)
+                plot(MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho) , real(ChoOFFSpec(lbcho:ubcho)), ...
+                    MRS_struct.freq(lbcho:ubcho), real(ChoONSpec(lbcho:ubcho)-ChoOFFSpec(lbcho:ubcho)))
+                title ('post Cho Tweak')
+                                set(gca,'XDir','reverse');
+
+                figure(5); 
+                subplot(2,2,1)
+                plot(real(AllFramesFT(17500:17900,1:2:end)));
+                title('ON no align')
+                set(gca,'XDir','reverse');
+                subplot(2,2,2)
+                plot(real(AllFramesFT(17500:17900,2:2:end)));
+                title('OFF no align')
+                set(gca,'XDir','reverse');
+                subplot(2,2,3)
+                plot(real(AllFramesFTrealign(17500:17900,1:2:end)));
+                title('ON Realign')
+                set(gca,'XDir','reverse');
+                subplot(2,2,4)
+               plot(real(AllFramesFTrealign(17500:17900,2:2:end)));
+                title('OFF Realign')
+                set(gca,'XDir','reverse');
+      
+        
+        
+        % CJE 120126 Choline Tweak End %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
                 for jj=1:(totalframes/2)
