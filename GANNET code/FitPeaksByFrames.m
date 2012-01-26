@@ -48,7 +48,7 @@
          plot(freq', real(FrameData(:,jj)), 'r', freq', fit_plot,'b');
          title(['FIT frame ' num2str(jj)])
          set(gca,'XDir','reverse');
-         input('aa')
+%         input('aa')
     end
     
     for kk=1:size(FitParams,1)
