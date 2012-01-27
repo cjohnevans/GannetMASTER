@@ -66,7 +66,7 @@ else
     MRS_struct.Reference_compound='Cr';
 end
 MRS_struct.LB=LB;
-MRS_struct.versionload = '120123_FitAllFrames';
+MRS_struct.versionload = '120126-FitAllFrames';
 %FreqPhaseAlign=1; %110825
 
 
@@ -407,7 +407,7 @@ for ii=1:numpfiles
         elseif (strcmpi(MRS_struct.vendor,'Philips'))
             for jj=1:totalframes
          	 AllFramesFTrealign(:,jj)=circshift(AllFramesFT(:,jj), -FrameShift(jj));
-           end
+            end
         end
         
         MRS_struct.waterfreq(ii,:) = MRS_struct.freq(FrameMaxPos);
@@ -614,8 +614,11 @@ for ii=1:numpfiles
                 
                 % CJE 120126 Add condition to discard points after jump in
                 % water freq > 0.01ppm
-                waterreject = [ 0 (abs(diff(MRS_struct.waterfreq))>0.01) ];
+                waterreject = [ 0 (abs(diff(MRS_struct.waterfreq(ii,:)))>0.01) ];
                 rejectframes = rejectframes + waterreject';
+                
+                %prevent double counting
+                rejectframes = (rejectframes>0)
                 
                 lastreject = -1;
                 numreject=0;
