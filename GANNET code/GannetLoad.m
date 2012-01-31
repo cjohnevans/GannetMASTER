@@ -1046,5 +1046,15 @@ for ii=1:numpfiles
     % 111111 RAEE FitPeaksByFrames moved to separate file - used also in
     % GannetFit if the Reference_compound  is Cr.
     
-    
-    
+    function ChoVariance = ChoVariance_ON_OFF(offsetFP, ChoONSpec, ChoOFFSpec)
+            
+        ChoONSpec_shift = ChoONSpec * ...
+            exp(1i * offsetFP(2) * pi /180);
+        ChoONSpec_shift=fshift(ChoONSpec_shift, ...
+            offsetFP(1));
+
+        
+        ChoVariance = sum(real(real(ChoONSpec_shift) - real(ChoOFFSpec)).^2);
+        
+        
+        
