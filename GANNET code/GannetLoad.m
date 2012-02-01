@@ -653,7 +653,7 @@ for ii=1:numpfiles
                         AllFramesFTrealign(:,(2*pairnumber)) =  EvenFramesFTrealign(1:end, pairnumber);
                     end
                 end
-                numreject = 2 * sum(rejectframes); % ON and OFF get rejected
+                numreject = 2 * 2 * sum(rejectframes); % ON and OFF get rejected and TWO phase cycles.
 
 
 
