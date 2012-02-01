@@ -615,6 +615,19 @@ for ii=1:numpfiles
                 %	 frequpper = repmat(frequpper, [1 totalframes]);
                 %	 freqlower = repmat(freqlower, [1 totalframes]);
 
+                % CJE 120126 Add condition to discard points after jump in
+                % water freq > 0.01ppm
+                waterreject = [ 0 (abs(diff(MRS_struct.waterfreq(ii,:)))>0.01) ]
+                %waterreject checks ALL frames
+                waterreject = reshape(waterreject, [2 numel(waterreject)/2])
+                waterreject = max(waterreject);
+                
+                rejectframes = rejectframes + waterreject'
+                
+                %prevent double counting
+                rejectframes = (rejectframes>0)
+                
+
                 lastreject = -1;
                 numreject=0;
                 %    for jj=1:totalframes
