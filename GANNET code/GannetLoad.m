@@ -632,12 +632,15 @@ for ii=1:numpfiles
                             EvenFramesFTrealign(1:end, pairnumber) = 0;
                             AllFramesFTrealign(1:end, (2*pairnumber-1):(2*pairnumber)) = 0;
                             lastreject = pairnumber;
-                            numreject = numreject + 2;
+                            % CJE 120206 fix numrejects bug for 2 phase
+                            % cycles
+                            % numreject = numreject + 2;
+                             numreject = numreject + 4;
                         end
                     end
                 end
                 
-                CholineTweak=1; %set to OFF for big subtraction artefact!
+                CholineTweak=0; %set to OFF for big subtraction artefact!
                 if(CholineTweak)
  
                     %Adjust ON and OFF reference freq by difference in Choline
