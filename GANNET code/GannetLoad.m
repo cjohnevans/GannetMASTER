@@ -640,7 +640,7 @@ for ii=1:numpfiles
                     end
                 end
                 
-                CholineTweak=0; %set to OFF for big subtraction artefact!
+                CholineTweak=1; %set to OFF for big subtraction artefact!
                 if(CholineTweak)
  
                     %Adjust ON and OFF reference freq by difference in Choline
