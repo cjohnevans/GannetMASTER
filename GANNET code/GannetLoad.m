@@ -233,12 +233,6 @@ for ii=1:numpfiles
             stop_recv = hdr_value(102);
             nreceivers = (stop_recv - start_recv) + 1;
             
-            
-            %%% DOES NOT WORK %%%
-            [hdr_in, countS] = fread(fid, 75000, 'uint8', 0, 'ieee-le');
-          
-            hdr_string = char(hdr_in)';
-            findstr(hdr_string, 'C')
              
             % Specto Prescan pfiles
             if (da_xres == 1) & (da_yres == 1)
