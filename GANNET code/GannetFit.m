@@ -747,6 +747,7 @@ T2_GABA = 0.088; % from JMRI paper 2011 Eden et al.
 
 T1_Water = 1.100; % average of WM and GM, estimated from Wansapura 1999
 T2_Water = 0.095; % average of WM and GM, estimated from Wansapura 1999
+SiteFactor=0.779; % rescale to get sensible numbers in CUBRIC
 MM=0.45;  % MM correction: fraction of GABA in GABA+ peak. (In TrypDep, 30 subjects: 55% of GABA+ was MM)
 %This fraction is platform and implementation dependent, base on length and
 %shape of editing pulses and ifis Henry method. 
@@ -763,7 +764,7 @@ T2_factor = exp(-TE./T2_Water) ./ exp(-TE./T2_GABA);
 
 MRS_struct.gabaiu(ii) = (MRS_struct.gabaArea(ii)  ./  MRS_struct.waterArea(ii))  ...
     * PureWaterConc*WaterVisibility*T1_factor*T2_factor*(N_H_Water./N_H_GABA) ...
-    * MM * (MRS_struct.Nwateravg ./ MRS_struct.Navg(ii)) ./ EditingEfficiency;
+    * MM * SiteFactor * (MRS_struct.Nwateravg ./ MRS_struct.Navg(ii)) ./ EditingEfficiency;
 
 %%%%%%%%%%%%%%% INSET FIGURE %%%%%%%%%%%%%%%%%%%%%%%
 function [h_main, h_inset]=inset(main_handle, inset_handle,inset_size)
