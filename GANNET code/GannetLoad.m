@@ -621,9 +621,9 @@ for ii=1:numpfiles
                 %RAEE - make this GE specific for now... both because short
                 %phase cycle and because WS is 'bad'...
                 if(strcmpi(MRS_struct.vendor,'GE'))
-                    waterreject = [ 0 (abs(diff(MRS_struct.waterfreq(ii,:)))>0.01) ]
+                    waterreject = [ 0 (abs(diff(MRS_struct.waterfreq(ii,:)))>0.01) ];
                     %waterreject checks ALL frames
-                    waterreject = reshape(waterreject, [2 numel(waterreject)/2])
+                    waterreject = reshape(waterreject, [2 numel(waterreject)/2]);
                     waterreject = max(waterreject);
 
                     rejectframes = rejectframes + waterreject';

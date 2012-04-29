@@ -747,7 +747,7 @@ T2_GABA = 0.088; % from JMRI paper 2011 Eden et al.
 
 T1_Water = 1.100; % average of WM and GM, estimated from Wansapura 1999
 T2_Water = 0.095; % average of WM and GM, estimated from Wansapura 1999
-SiteFactor=0.779; % rescale to get sensible numbers in CUBRIC
+SiteFactor=0.779; % site specific scaling factor, CUBRIC=0.779
 MM=0.45;  % MM correction: fraction of GABA in GABA+ peak. (In TrypDep, 30 subjects: 55% of GABA+ was MM)
 %This fraction is platform and implementation dependent, base on length and
 %shape of editing pulses and ifis Henry method. 
