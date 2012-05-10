@@ -59,6 +59,8 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
+set(hObject, 'Name', 'GannetPlot');
+
 % Populate listboxes and phases
 update_listbox1(handles);
 update_listbox2(handles);
