@@ -571,6 +571,7 @@ for ii=1:numpfiles
                 % 110715 - only fit OFF frames
                 [CrFitParams, rejectframes] = FitPeaksByFrames(freqrange, Cr_frames_OFF, Cr_initx);
                 %    [CrFitParams, rejectframes] = FitPeaksByFrames(freqrange, AllFramesFT(lb:ub,:), Cr_initx);
+                MRS_struct.CrArea_OffFrames(ii,:) = CrFitParams(:,1);
                 CrFreqShift = CrFitParams(:,3);
                 CrFreqShift = CrFreqShift - 3.03*LarmorFreq;
                 CrFreqShift = CrFreqShift ./ (3*42.58*(MRS_struct.freq(2) - MRS_struct.freq(1) ));
@@ -681,6 +682,12 @@ for ii=1:numpfiles
                 numreject = -1;
             end
         end
+        
+        % store each diff separately for error estimate 120510
+        MRS_struct.diffSubSpectra(:,:,ii) = (OddFramesFTrealign - ...
+            EvenFramesFTrealign)';
+
+        
         DiffSpecRealign(ii,:)=sum(OddFramesFTrealign,2)-sum(EvenFramesFTrealign,2);
         SumSpecRealign(ii,:)=sum(OddFramesFTrealign,2)+sum(EvenFramesFTrealign,2);
         MRS_struct.OFFspec(ii,:)=sum(EvenFramesFTrealign,2);
