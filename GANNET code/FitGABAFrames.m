@@ -12,8 +12,7 @@ FIT_NLINFIT = 1;
 
 fit_method = FIT_NLINFIT; %FIT_NLINFIT;
 
-
-% Needs to be run on GABAerror branch of Gannet - i.e. needs
+% Needs to be run on GABAtimeseries branch of Gannet - i.e. needs
 %    diffSubSpectrum array.
 %GABAData=MRS_struct.gabaspec;
 GABAData = MRS_struct.diffSubSpectra(:,:,ii);
@@ -30,11 +29,14 @@ disp(['GABA Fit Version is ' MRS_struct.versionfit ]);
 numscans=size(GABAData);
 numscans=numscans(1);
 
+Crdata = MRS_struct.EvenFrames;
+
 size(GABAData(:,1))
-% remove blank lines
+% remove blank lines from GABA and Cr, starting from the end
 for kk = numscans:-1:1
     if (GABAData(kk,1) == 0)
         GABAData(kk,:) = [];
+        Crdata(:,kk) = [];
     end
 end
 
@@ -46,19 +48,51 @@ npoints = length(GABAData(1,:));
 nblocks = fix( numsubspec / subspecblock );
 nremain = mod( numsubspec , subspecblock );
 
-
+% work out blocks for GABA
 blockGABAdata = GABAData(1:(end-nremain),:); % discard remainder, until I think of a better way... 
 blockGABAdata = blockGABAdata'; % to [points, subspectra]
-size(blockGABAdata)
 
 blockGABAdata = reshape(blockGABAdata, [npoints, subspecblock, nblocks]);
 % sum across blocks
 blockGABAdata = sum(blockGABAdata,2);
 blockGABAdata = reshape(blockGABAdata, [npoints nblocks ]);
-
 GABAData = blockGABAdata';% back to [subspectra, points]
 
+% and do the same for Cr, from the EvenFrames data
+blockCr = Crdata(:, 1:(end-nremain)); % EvenFrames is [points, subspectrum]
+
+
+blockCr = reshape(blockCr, [npoints, subspecblock, nblocks]);
+% sum across blocks
+blockCr = sum(blockCr,2);
+blockCr = reshape(blockCr, [npoints nblocks ]); % FitPeaksByFrames takes [points, subspectra]
+
+
 %plot(real(GABAData(:,17000:18500))');
+
+%fit Cr frames
+for jj = 1:nblocks
+    
+    z=abs(MRS_struct.freq-3.12);
+    lb_cr=find(min(z)==z);
+    z=abs(MRS_struct.freq-2.72);
+    ub_cr=find(min(z)==z);
+    
+    %For now just align Cr of the sum to 3.03 ppm...
+    freqrange = MRS_struct.freq(lb_cr:ub_cr);
+    
+    blockCrfitparams = FitPeaksByFrames(freqrange, blockCr(lb_cr:ub_cr,:), MRS_struct.Cr_SumFitParam);
+    %need to convert fit params back to input values
+    conv = [1 1/(2*42.576*3) 1/(42.576*3) (pi/180) 1 1 ];
+    
+    blockCrfitparams = blockCrfitparams .* repmat(conv, [nblocks 1])
+
+    % from GannetFit
+       MRS_struct.Cr_area_subspec(ii,jj)=sum(real(LorentzModel(blockCrfitparams(jj,:),freqrange) )  ...
+        - LorentzModel([0 blockCrfitparams(jj,2:end)],freqrange)) ...
+        * (freq(1) - freq(2)) ;   
+end
+
 
 for jj = 1:nblocks
     MRS_struct.pfile{ii};
@@ -110,13 +144,6 @@ for jj = 1:nblocks
     % NP; but taken from Johns code, now initialise with parameters declared above
     GaussModelInit = [10*maxinGABA -90 3.026 LinearInit constInit]; %default in 110624
 
-    %OLD INITS; WHY NOT CUT THESE OUT (NP)
-    %GaussModelInit = [4.1314 -140.0000 3.0005 -0.8776 0.5684]; %from MINLSQ
-    %GaussModelInit = [1 -140.0000 3.0005 -0.8776 0.5684]; %works
-    %GaussModelInit = [maxinGABA -90 3.026 0 0]; %works
-    %GaussModelInit = [ 1 -90 3.026 0 0]; %fails
-    %GaussModelInit = [ 1 -90 3.026 -0.8776 0.5684]; %works
-
     lb = [0 -200 2.87 -40*maxinGABA -2000*maxinGABA]; %NP; our bounds are 0.03 less due to creatine shift
     ub = [4000*maxinGABA -40 3.12 40*maxinGABA 1000*maxinGABA];
 
@@ -129,7 +156,7 @@ for jj = 1:nblocks
     nlinopts = statset(nlinopts, 'MaxIter', 1e5);
 
 
-    [GaussModelParam(jj,:),resnorm, residg] = lsqcurvefit(@(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
+    [GaussModelParam(jj,:),~, residg] = lsqcurvefit(@(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
         GaussModelInit, ...
         freq(freqbounds),...
         real(GABAData(jj,freqbounds)), ...
@@ -142,7 +169,7 @@ for jj = 1:nblocks
         % 1111013 restart the optimisation, to ensure convergence
 
         for fit_iter = 1:100
-            [GaussModelParam(jj,:), residg, J, COVB, MSE] = nlinfit(freq(freqbounds), real(GABAData(jj,freqbounds)), ... % J, COBV, MSE edited in
+            [GaussModelParam(jj,:), residg, ~, COVB, MSE] = nlinfit(freq(freqbounds), real(GABAData(jj,freqbounds)), ... % J, COBV, MSE edited in
                 @(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
                 GaussModelInit, ...
                 nlinopts);
@@ -165,38 +192,23 @@ for jj = 1:nblocks
     % This sets GabaArea as the area under the curve.
     MRS_struct.GABA_area_subspec(ii,jj)=GaussModelParam(jj,1)./sqrt(-GaussModelParam(jj,2))*sqrt(pi);
 
-
-    %figure(22)
-    %plot(freq(freqbounds),GaussModel_area(GaussModelParam(jj,:),freq(freqbounds)),'r',...
-    %freq(plotbounds),real(GABAData(jj,plotbounds)), 'b' )
-
-%     legendtxt = regexprep(MRS_struct.pfile{ii}, '_','-');
-%     title(legendtxt);
-%     set(gca,'XDir','reverse');
-%     %set(gca,'YTick',[], 'Xgrid', 'on');
-%     oldaxis = axis;
-%     axis( [2.6 3.6 oldaxis(3) oldaxis(4) ] )
-
+    MRS_struct.GABACr = MRS_struct.GABA_area_subspec ./ MRS_struct.Cr_area_subspec
 end
 
-% work out all of the fits
-
+%%%%%%%%%%%% stuff for the plots %%%%%%%%%%%%
 
 plotstart = 17000; plotend =17999;
-
-
 for jj=1:nblocks
     % calculate fit, for plotting later
     GABAblockfit(jj,:) = GaussModel_area(GaussModelParam(jj,:),freq(plotstart:plotend));
 end
-
 
 startoffset=0;
 offsetspec = mean(max(real(GABAData(1,plotstart:plotend))));
 
 endoffset = startoffset + ...
     (nblocks-1) * offsetspec;
-offsetvals = [startoffset:offsetspec:endoffset]'
+offsetvals = [startoffset:offsetspec:endoffset]';
 
 offsetvals = repmat(offsetvals, [1 length([plotstart:plotend])]);
 size(offsetvals)
@@ -206,10 +218,45 @@ plotdiffspec = real(GABAData(:,plotstart:plotend)) + offsetvals;
 GABAblockfit = GABAblockfit + offsetvals;
 
 figure(23)
+subplot(1,2,1)
 plot([plotstart:plotend],plotdiffspec','k', [plotstart:plotend], GABAblockfit, 'r')
 
+% and Cr...
+for jj=1:nblocks
+    % calculate fit, for plotting later
+    Crblockfit(jj,:) = real(LorentzModel(blockCrfitparams(jj,:),freqrange));
+end
 
-%plot(plotdiffspec')
+blockCrplot = blockCr';
+
+plotstart = lb_cr; plotend =ub_cr;
+
+startoffset=0;
+offsetspec = mean(max(real(blockCrplot(1,plotstart:plotend))));
+
+endoffset = startoffset + ...
+    (nblocks-1) * offsetspec;
+offsetvals = [startoffset:offsetspec:endoffset]';
+
+offsetvals = repmat(offsetvals, [1 length([plotstart:plotend])]);
+
+plotCrspec = real(blockCrplot(:,plotstart:plotend)) + offsetvals;
+Crblockfit = Crblockfit + offsetvals;
+
+
+subplot(1,2,2)
+plot([plotstart:plotend],plotCrspec','k', [lb_cr:ub_cr], Crblockfit, 'r')
+
+figure(24)
+subplot(3,1,1)
+plot([1:nblocks], MRS_struct.GABA_area_subspec, 'o-' )
+title 'GABA area'
+subplot(3,1,2)
+plot( [1:nblocks], MRS_struct.Cr_area_subspec,'o-')
+title 'Cr area'
+subplot(3,1,3)
+plot( [1:nblocks], MRS_struct.GABACr,'o-')
+title('GABA/Cr')
 
 
 % end of MRSGABAfit

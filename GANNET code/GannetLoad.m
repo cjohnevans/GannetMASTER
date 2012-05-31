@@ -553,6 +553,9 @@ for ii=1:numpfiles
                 conv = [1 1/(2*42.576*3) 1/(42.576*3) (pi/180) 1 1/size(AllFramesFT,2) ];
 
                 Cr_initx = Cr_initx .* conv;
+                
+                %CJE 31/5/12 store this for FitGABAFrames
+                MRS_struct.Cr_SumFitParam = Cr_initx;
 
                 % Water peak freq shift estimation
                 % find peak location for frequency realignment
