@@ -707,6 +707,13 @@ for ii=1:numpfiles
         %DiffSpec(ii,:)=fftshift(fft(DiffFID));
         %SumSpec(ii,:)=fftshift(fft(SumFID));
         
+        
+        % CJE Jul 12: Recalculate Creatine linewidth, post alignment
+        conv = [1 1/(2*42.576*3) 1/(42.576*3) (pi/180) 1 1/size(AllFramesFT,2) ];
+        Cr_initx_Post =CrSumSpecFit  .* conv;
+        CrSumSpecFitPost = FitPeaksByFrames(freqrange, SumSpecRealign(ii,lb:ub)', Cr_initx_Post);
+        MRS_struct.fwhmHz_PostAlign(ii) = CrSumSpecFitPost(2);
+        
         %  CJE Feb 11:  Return the realigned spectra
         MRS_struct.gabanoalign(ii,:)=DiffSpec(ii,:);
         MRS_struct.gabaspec(ii,:)=DiffSpecRealign(ii,:);
