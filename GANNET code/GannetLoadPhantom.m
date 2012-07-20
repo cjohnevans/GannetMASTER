@@ -622,9 +622,17 @@ for ii=1:numpfiles
         %SumSpec(ii,:)=fftshift(fft(SumFID));
         
         %  CJE Feb 11:  Return the realigned spectra
-        MRS_struct.gabanoalign(ii,:)=DiffSpec(ii,:);
-        MRS_struct.gabaspec(ii,:)=DiffSpecRealign(ii,:);
-        MRS_struct.sumspec(ii,:)=SumSpecRealign(ii,:);
+        % CJE - do the alignment, but ignore the result in phantom...
+        if MRS_struct.phantom_data == 1
+            MRS_struct.gabanoalign(ii,:)=DiffSpec(ii,:);
+            MRS_struct.gabaspec(ii,:)=DiffSpec(ii,:);
+            MRS_struct.sumspec(ii,:)=SumSpec(ii,:);
+        else
+            MRS_struct.gabanoalign(ii,:)=DiffSpec(ii,:);
+            MRS_struct.gabaspec(ii,:)=DiffSpecRealign(ii,:);
+            MRS_struct.sumspec(ii,:)=SumSpecRealign(ii,:);
+        end          
+            
         % calculate FWHM, based on NAA peak
         %MRS_struct.fwhmHz(ii)=-fwhm(MRS_struct.freq(18300:18850), ...
         %			      real(MRS_struct.sumspec(ii,18300:18850)))*42.58*3;

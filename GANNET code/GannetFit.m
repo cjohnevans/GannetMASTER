@@ -329,10 +329,6 @@ for ii=1:numscans
                 %set(gca,'YTick',[], 'Xgrid', 'on');
                 %xlim([4.2 5.2]);
 
-
-
-
-
                 [LGModelParam(ii,:),residw] = nlinfit(freq(freqbounds), real(WaterData(ii,freqbounds)),...
                     @(xdummy,ydummy)	LorentzGaussModel(xdummy,ydummy),...
                     LGModelInit, nlinopts);
@@ -659,22 +655,6 @@ for ii=1:numscans
 end
 
 % end of MRSGABAfit
-
-% %%%%%%%%%%%%%%% 111102 DoubleGaussModel MODEL %%%%%%%%%%%%%%%%%%%
-function F = DoubleGaussModel(x,freq)
-%A=5/128; Fred
-A=5/127.35; %6.6Hz = avg of Gln & Gln
-% x(1) = gaussian amplitude
-% x(2) = 1/(2*sigma^2)
-% x(3) = centre freq of peak
-% x(4) = amplitude of linear baseline
-% x(5) = constant amplitude offset
-
-%F = x(1)*(exp(x(2)*(freq-x(3)-A).*(freq-x(3)-A)))+x(6)*exp(x(2)*(freq-x(3)+A).*(freq-x(3)+A)))+x(4)*(freq-x(3))+x(5);
-F = x(1)*(exp(x(2)*(freq-x(3)-A).*(freq-x(3)-A))) + ... 
-    x(1)*(exp(x(2)*(freq-x(3)+A).*(freq-x(3)+A))) + ... 
-    x(4)*(freq-x(3))+x(5);
-
 
 %%%%%%%%%%%%%%%%%%%%%%%% GAUSS MODEL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function F = GaussModel_area(x,freq)
