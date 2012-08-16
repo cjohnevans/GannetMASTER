@@ -52,7 +52,8 @@ global ComftW;
 %global pfile;
 
 %LB=4; %RE default
-LB = 1.3;
+%LB = 1.3;
+LB=0.5 % for phantom 
 ZeroFillTo = 32768;
 
 %ZeroFillTo = 16384;
@@ -348,6 +349,7 @@ for ii=1:numpfiles
         %110825
     %time=(1:1:size(FullData,1))/2000;
     time=(1:1:size(FullData,1))/MRS_struct.sw;
+    MRS_struct.time = time;
     time_zeropad=(1:1:ZeroFillTo)/(MRS_struct.sw);
     DataSize = size(FullData,2);
     
@@ -458,7 +460,7 @@ for ii=1:numpfiles
             MRS_struct.freq(17651)
             MRS_struct.freq(18000)
             freqrange = MRS_struct.freq(lb:ub);
-            figure(9);plot( real(AllFramesFT(:,1:2)));
+            %figure(9);plot( real(AllFramesFT(:,1:2)));
             % initx = [area hwhm f0 phase baseline0 baseline1 ]
             % n.b. initials are in [ area ppm ppm rads baseline0 baseline1 ], but returned values are
             % [area FWHM_Hz Hz deg baseline0 baseline1]
@@ -521,7 +523,7 @@ for ii=1:numpfiles
                 size(CrFreqShift)
                 CrFreqShift_avg = repmat(CrFreqShift', [2 1]);
                 CrFreqShift_avg = round(reshape(CrFreqShift_avg, [ (numel(CrFreqShift_avg)) 1 ]));
-                figure(5); plot(CrFreqShift_avg','o-');
+                %figure(5); plot(CrFreqShift_avg','o-');
                 CrPhaseShift = CrFitParams(:,4);
                 CrPhaseShift = repmat(CrPhaseShift, [2 1 ]);
                 CrPhaseShift = reshape(CrPhaseShift, [ (numel(CrPhaseShift)) 1 ]);
