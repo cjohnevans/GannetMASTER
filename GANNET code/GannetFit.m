@@ -428,7 +428,7 @@ for ii=1:numscans
             MRS_struct.CrFitError(ii) .^ 2 ) .^ 0.5;
         MRS_struct.CrArea(ii)=sum(real(LorentzModel(CrFitParams(ii,:),freqrange)-LorentzModel([0 CrFitParams(ii,2:end)],freqrange))) * (freq(1) - freq(2));
 % CJE 120131
-        MRS_struct.gabaiuCr(ii)=MRS_struct.gabaArea(ii)./MRS_struct.CrArea(ii)/2.0; %Factor of 2.0 account for CR coming from OFF not all data, and sum not average...
+        MRS_struct.GABA_Cr(ii)=MRS_struct.gabaArea(ii)./MRS_struct.CrArea(ii)/2.0; %Factor of 2.0 account for CR coming from OFF not all data, and sum not average...
         % effective editing efficiency of both Cr and GABA is 0.5, 
         % Cr 3.0 has 3 spins, GABA 3.0 has 2.  Cr is from SUM, so
         % need factor (1/2)...
@@ -489,7 +489,7 @@ for ii=1:numscans
         MRS_struct.GABAIU_Error_cr(ii) = (MRS_struct.GABAFitError(ii) .^ 2 + ...
             MRS_struct.CrFitError(ii) .^ 2 ) .^ 0.5;
         MRS_struct.CrArea(ii)=sum(real(LorentzModel(CrFitParams(ii,:),freqrange)-LorentzModel([0 CrFitParams(ii,2:end)],freqrange))) * (freq(1) - freq(2));
-        MRS_struct.gabaiuCr(ii)=MRS_struct.gabaArea(ii)./MRS_struct.CrArea(ii)/2.0; %Factor of 2.0 account for CR coming from OFF not all data, and sum not average...
+        MRS_struct.GABA_Cr(ii)=MRS_struct.gabaArea(ii)./MRS_struct.CrArea(ii)/2.0; %Factor of 2.0 account for CR coming from OFF not all data, and sum not average...
         %alter resid Cr for plotting.
         residCr = residCr + Crmin - resmaxCr;
         %Plot the Cr fit
@@ -549,7 +549,7 @@ for ii=1:numscans
         text(0,0.4, tmp, 'FontName', 'Courier');
         tmp = sprintf('GABA+ / H_2O  : %.4f inst. units.', MRS_struct.gabaiu(ii) );
         text(0,0.3, tmp, 'FontName', 'Courier');
-        tmp = sprintf('GABA+/Cr i.r.: %.4f', MRS_struct.gabaiuCr(ii) );
+        tmp = sprintf('GABA+/Cr i.r.: %.4f', MRS_struct.GABA_Cr(ii) );
         text(0,0.2, tmp, 'FontName', 'Courier');
         tmp =       [ 'Ver(Load/Fit): ' MRS_struct.versionload ',' tmp2 ',' MRS_struct.versionfit];
         text(0,0.1, tmp, 'FontName', 'Courier');
@@ -563,7 +563,7 @@ for ii=1:numscans
         text(0,0.5, tmp, 'FontName', 'Courier');
         tmp = sprintf('FitError (Cr): %.2f%%', MRS_struct.GABAIU_Error_cr);
         text(0,0.4, tmp, 'FontName', 'Courier');
-        tmp = sprintf('GABA+/Cr i.r.: %.4f', MRS_struct.gabaiuCr(ii) );
+        tmp = sprintf('GABA+/Cr i.r.: %.4f', MRS_struct.GABA_Cr(ii) );
         text(0,0.3, tmp, 'FontName', 'Courier');
         tmp =       [ 'Ver(Load/Fit): ' MRS_struct.versionload ',' tmp2 ',' MRS_struct.versionfit];
         text(0,0.2, tmp, 'FontName', 'Courier');
