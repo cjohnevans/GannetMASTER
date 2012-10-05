@@ -688,7 +688,10 @@ for ii=1:numpfiles
         
         %  CJE Feb 11:  Return the realigned spectra
         MRS_struct.gabanoalign(ii,:)=DiffSpec(ii,:);
-        MRS_struct.gabaspec(ii,:)=DiffSpecRealign(ii,:);
+        %CJE Oct12.  Phasing fix - hardcode no realignment for phantom
+        %MRS_struct.gabaspe(ii,:)=DiffSpecRealign(ii,:);
+        MRS_struct.gabaspec(ii,:)= MRS_struct.gabanoalign(ii,:);
+        
         MRS_struct.sumspec(ii,:)=SumSpecRealign(ii,:);
         % calculate FWHM, based on NAA peak
         %MRS_struct.fwhmHz(ii)=-fwhm(MRS_struct.freq(18300:18850), ...
