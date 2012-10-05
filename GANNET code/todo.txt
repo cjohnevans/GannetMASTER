@@ -1,3 +1,0 @@
-phantom:
-fix gaba area calc
-default to alignment off in load
