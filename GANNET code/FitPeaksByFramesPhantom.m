@@ -39,7 +39,6 @@
     FitParams(:,4) = phase_unwrapped;
     
     % Fix area and linewidth to be positive
-    
     FitParams(:,1) = abs(FitParams(:,1));
     FitParams(:,2) = abs(FitParams(:,2));
     
