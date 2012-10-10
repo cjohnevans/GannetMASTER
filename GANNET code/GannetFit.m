@@ -75,9 +75,9 @@ for ii=1:numscans
     %MRS_struct.freq(18000)
     %Hard code it to fit from 2.75 ppm to 3.55 ppm
     z=abs(MRS_struct.freq-3.55);
-    lowerbound=find(min(z)==z)
+    lowerbound=find(min(z)==z);
     z=abs(MRS_struct.freq-2.79);%2.75
-    upperbound=find(min(z)==z)
+    upperbound=find(min(z)==z);
     %lowerbound=17342;
     %upperbound=17961;
     %upperbound=18000;
@@ -104,26 +104,16 @@ for ii=1:numscans
 
     %  GaussModelInit = [10*maxinGABA -90 3.026 0 0];
     % NP; but taken from Johns code, now initialise with parameters declared above
-    GaussModelInit = [10*maxinGABA -90 3.026 LinearInit constInit]; %default in 110624
-
-    %OLD INITS; WHY NOT CUT THESE OUT (NP)
-    %GaussModelInit = [4.1314 -140.0000 3.0005 -0.8776 0.5684]; %from MINLSQ
-    %GaussModelInit = [1 -140.0000 3.0005 -0.8776 0.5684]; %works
-    %GaussModelInit = [maxinGABA -90 3.026 0 0]; %works
-    %GaussModelInit = [ 1 -90 3.026 0 0]; %fails
-    %GaussModelInit = [ 1 -90 3.026 -0.8776 0.5684]; %works
-
-    lb = [0 -200 2.87 -40*maxinGABA -2000*maxinGABA]; %NP; our bounds are 0.03 less due to creatine shift
-    ub = [4000*maxinGABA -40 3.12 40*maxinGABA 1000*maxinGABA];
-
-
+    % updated to deal with -ve maxinGABA
+    GaussModelInit = [abs(10*maxinGABA) -90 3.026 LinearInit constInit]; %default in 110624
+    lb = [0 -200 2.87 -40*abs(maxinGABA) -2000*abs(maxinGABA)]; %NP; our bounds are 0.03 less due to creatine shift
+    ub = [abs(4000*maxinGABA) -40 3.12 40*abs(maxinGABA) 1000*abs(maxinGABA)];
 
     %NP; From Johns code, initialising steps, just copied over
     options = optimset('lsqcurvefit');
     options = optimset(options,'Display','off','TolFun',1e-10,'Tolx',1e-10,'MaxIter',1e5);
     nlinopts = statset('nlinfit');
     nlinopts = statset(nlinopts, 'MaxIter', 1e5);
-
 
     [GaussModelParam(ii,:),resnorm(ii), residg] = lsqcurvefit(@(xdummy,ydummy) GaussModel_area(xdummy,ydummy), ...
         GaussModelInit, ...
