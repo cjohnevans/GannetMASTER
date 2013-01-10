@@ -92,8 +92,9 @@ for ii=1:numscans
     plotbounds=(lowerbound-150):(upperbound+150);
     
     % CJE 120105 find the peak in GABA (height & pos) and initialise with this
-    [maxinGABA, maxinGABApos] = max(real(GABAData(freqbounds)));
-    maxinGABAppm = MRS_struct.freq(maxinGABApos);
+    [maxinGABA, maxinGABApos] = max(real(GABAData(freqbounds)))
+    maxinGABApos = maxinGABApos + lowerbound
+    maxinGABAppm = MRS_struct.freq(maxinGABApos) 
     
     % smarter estimation of baseline params, Krish's idea (taken from Johns
     % code; NAP 121211
@@ -110,7 +111,8 @@ for ii=1:numscans
     size(resnorm);
 
     if(MRS_struct.phantom_data)
-       GaussModelInit = [10*maxinGABA -9000 maxinGABAppm LinearInit constInit 0.5*maxinGABA]; %Initiate three gauss model parameters
+       %GaussModelInit = [10*maxinGABA -9000 maxinGABAppm LinearInit constInit 0.5*maxinGABA]; %Initiate three gauss model parameters
+       GaussModelInit = [10*maxinGABA -9000 maxinGABAppm 0 0 0.5*maxinGABA]; %Initiate three gauss model parameters
          lb = [0 -15000 2.5 -40*maxinGABA -2000*maxinGABA 0.1];
         ub = [4000*maxinGABA -40 3.15 40*maxinGABA 1000*maxinGABA 1];
     else
@@ -124,6 +126,10 @@ for ii=1:numscans
     options = optimset(options,'Display','off','TolFun',1e-10,'Tolx',1e-10,'MaxIter',1e5);
     nlinopts = statset('nlinfit');
     nlinopts = statset(nlinopts, 'MaxIter', 1e5);
+
+    figure(1)
+    initfit = ThreeGaussModel(GaussModelInit, freqbounds);
+    plot(freq(freqbounds), GABAData(ii,freqbounds), freq(freqbounds), initfit)
 
     % CJE 120105
     if(MRS_struct.phantom_data)    
@@ -142,6 +148,11 @@ for ii=1:numscans
     end
     GaussModelInit = GaussModelParam(ii,:);
     % 1111013 restart the optimisation, to ensure convergence
+    
+    figure(2); plot(real(GABAData(ii,:)))
+    figure(3);
+    initfit = ThreeGaussModel(GaussModelInit, freqbounds);
+    plot(freq(freqbounds), GABAData(ii,freqbounds), freq(freqbounds), initfit)
     
     for fit_iter = 1:100
 % CJE 120105

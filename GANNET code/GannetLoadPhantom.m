@@ -600,6 +600,7 @@ for ii=1:numpfiles
         DiffSpecRealign(ii,:)=sum(OddFramesFTrealign,2)-sum(EvenFramesFTrealign,2);
         SumSpecRealign(ii,:)=sum(OddFramesFTrealign,2)+sum(EvenFramesFTrealign,2);
         MRS_struct.OFFspec(ii,:)=sum(EvenFramesFTrealign,2);
+        MRS_struct.ONspec(ii,:)=sum(OddFramesFTrealign,2);
         % Do the line broadening on the realigned data
         %DiffFIDrealign=ifft(fftshift(DiffSpecRealign(ii,:)));
         %SumFIDrealign=ifft(fftshift(SumSpecRealign(ii,:)));
