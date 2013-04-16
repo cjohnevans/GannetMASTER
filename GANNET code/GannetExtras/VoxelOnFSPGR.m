@@ -68,6 +68,8 @@ e=str2num(MRSHead(k+10:k+17));
 k = findstr(' user10:', MRSHead);
 f=str2num(MRSHead(k+11:k+18));
 VoxelSize = [f e d ]; % works for ob-axial rotator 
+%VoxelSize = [d f e]; % thalamus version
+%VoxelSize = [d e f]; % insula version
 
 %2. Get FSPGR location (and rotation) from FSPGR header
 % Get this from the dicom header prior to conversion
