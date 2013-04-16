@@ -219,19 +219,25 @@ for ii=1:numpfiles
 
             % Read header information
             status = fseek(fid, 0, 'bof');
-            [hdr_value, count] = fread(fid, 102, 'integer*2');
-            npasses = hdr_value(33);
-            nslices = hdr_value(35);
-            nechoes = hdr_value(36);
-            nframes = hdr_value(38);
-            point_size = hdr_value(42);
-            da_xres = hdr_value(52);
-            da_yres = hdr_value(53);
-            rc_xres = hdr_value(54);
-            rc_yres = hdr_value(55);
+            [hdr_value, count] = fread(fid, 5122, 'integer*2');
+            status = fseek(fid, 0, 'bof');
+            [f_hdr_value, count] = fread(fid, 74, 'real*4');
+            disp('--------------------header start--------------------')
+            npasses = hdr_value(33)
+            nslices = hdr_value(35)
+            nechoes = hdr_value(36)  %Ralph PSD
+            navs = hdr_value(37)
+            nframes = hdr_value(38)
+            point_size = hdr_value(42)
+            da_xres = hdr_value(52)
+            da_yres = hdr_value(53)
+            rc_xres = hdr_value(54)
+            rc_yres = hdr_value(55)
             start_recv = hdr_value(101);
             stop_recv = hdr_value(102);
-            nreceivers = (stop_recv - start_recv) + 1;
+            nreceivers = (stop_recv - start_recv) + 1
+            disp('--------------------header end--------------------')
+
             
              
             % Specto Prescan pfiles
@@ -248,17 +254,17 @@ for ii=1:numpfiles
             data_elements = da_xres*2;
             frame_size = data_elements*point_size;
             echo_size = frame_size*da_yres;
-            slice_size = echo_size*nechoes;
+            slice_size = echo_size*nechoes; %Ralph PSD
             mslice_size = slice_size*slices_in_pass;
             my_slice = 1;
             my_echo = 1;
             my_frame = 1;
 
-            FullData=zeros(nreceivers, da_xres , da_yres-my_frame+1);
+            FullData=zeros(nreceivers, da_xres , (da_yres-my_frame+1) * nechoes); %Ralph PSD
             %ChannelSplit=zeros(nreceivers, da_xres,split);
 
             %Start to read data into Eightchannel structure.
-            totalframes=da_yres-my_frame+1;
+            totalframes=(da_yres-my_frame+1) * nechoes;
             chunk=uint16(totalframes/split);
 
             data_elements2 = data_elements*totalframes*nreceivers;
@@ -294,17 +300,51 @@ for ii=1:numpfiles
             % 110303 CJE
             % calculate Navg from nframes, 8 water frames, 2 phase cycles
             % Needs to be specific to single experiment - for frame rejection
-            MRS_struct.Navg(ii) = (nframes-8)*2;
-            MRS_struct.Nwateravg = 8; %moved from MRSGABAinstunits RE 110726
-            MRS_struct.TR = 1.8;
-            ShapeData = reshape(raw_data,[2 da_xres totalframes nreceivers]);
-            ZeroData = ShapeData(:,:,1,:);
-            WaterData = ShapeData(:,:,2:9,:);
-            FullData = ShapeData(:,:,10:end,:);
+            if (nechoes == 1)
+                MRS_struct.Navg(ii) = (nframes-8)*2;
+                MRS_struct.Nwateravg = 8; %moved from MRSGABAinstunits RE 110726
+                MRS_struct.TR = 1.8;
+                ShapeData = reshape(raw_data,[2 da_xres totalframes nreceivers]);
+                ZeroData = ShapeData(:,:,1,:);
+                WaterData = ShapeData(:,:,2:9,:);
+                FullData = ShapeData(:,:,10:end,:);
+            
+                totalframes = totalframes-9;
 
-            totalframes = totalframes-9;
-
-            Frames_for_Water = 8;
+                Frames_for_Water = 8;
+            else
+                totalframes
+                dataframes = f_hdr_value(59)/navs
+                refframes = f_hdr_value(74)
+                nframes
+                if ((dataframes + refframes) ~= nframes)
+                    noadd = 1;
+                    dataframes = dataframes * navs
+                    refframes = refframes * navs
+                else
+                    noadd = 0;
+                end
+                if (totalframes ~= ((dataframes + refframes + 1) * 2))
+                    error('# of totalframes not same as (dataframes*reframes+1)*2')
+                end
+                MRS_struct.Navg(ii) = dataframes;
+                MRS_struct.Nwateravg = refframes; %moved from MRSGABAinstunits RE 110726
+                MRS_struct.TR = 1.8;
+                ShapeData = reshape(raw_data,[2 da_xres totalframes nreceivers]);
+                ZeroData = ShapeData(:,:,1,:);
+                WaterData = zeros([2 da_xres refframes*2 nreceivers]);
+                for loop=1:refframes
+                    WaterData(:,:,2*loop-1,:) = ShapeData(:,:,1+loop,:);
+                    WaterData(:,:,2*loop,:) = (-1)^(noadd) * ShapeData(:,:,totalframes/2+1+loop,:);
+                end
+                FullData = zeros([2 da_xres dataframes*2 nreceivers]);
+                for loop=1:dataframes
+                    FullData(:,:,2*loop-1,:) = ShapeData(:,:,1+refframes+loop,:);
+                    FullData(:,:,2*loop,:) = (-1)^(noadd) * ShapeData(:,:,totalframes/2+1+refframes+loop,:);                    
+                end
+                totalframes = totalframes - refframes*2 - 2;
+                Frames_for_Water = refframes * 2;
+            end
 
             FullData = FullData.*repmat([1;i],[1 da_xres totalframes nreceivers]);
             WaterData = WaterData.*repmat([1;i],[1 da_xres Frames_for_Water nreceivers]);
