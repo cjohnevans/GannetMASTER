@@ -473,6 +473,9 @@ for ii=1:numpfiles
             EvenFramesFT=AllFramesFT(:,2:2:end);
         end
         
+        MRS_struct.onspec = OddFramesFT;
+        MRS_struct.offspec = EvenFramesFT;
+
         
         if(strcmpi(MRS_struct.vendor,'Philips_data'))
             %Creatine align is an issue... if we align all spectra to
