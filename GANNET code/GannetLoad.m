@@ -58,6 +58,13 @@ ZeroFillTo = 32768;
 
 %ZeroFillTo = 16384;
 
+
+if(nargin == 0)
+    [fname, pname] = uigetfile('*.*', 'Select Pfile');
+    temppfile{1} = strcat(pname, fname);
+end
+
+
 MRS_struct.pfile=temppfile;
 if(nargin > 1)
     MRS_struct.waterfile = waterfile;
@@ -433,6 +440,9 @@ for ii=1:numpfiles
             EvenFramesFT=AllFramesFT(:,2:2:end);
         end
         
+        MRS_struct.onspec = OddFramesFT;
+        MRS_struct.offspec = EvenFramesFT;
+              
         
         if(strcmpi(MRS_struct.vendor,'Philips_data'))
             %Creatine align is an issue... if we align all spectra to
