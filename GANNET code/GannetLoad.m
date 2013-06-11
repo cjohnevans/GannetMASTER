@@ -1,14 +1,11 @@
-function [MRS_struct] = GannetLoad(temppfile, waterfile)
-%function [MRS_struct] = MRSLoadPfiles110825(temppfile, waterfile)
-%function [MRS_struct] = MRSLoadPfiles110825(pfiles, FreqPhaseAlign)
+function [MRS_struct] = GannetLoad(temppfile, ShowOutput, waterfile)
+%function [MRS_struct] = GannetLoad(temppfile, waterfile, SuppressOutput )
 % CJE110825.  Loads P files for analysis
 %
 %inputs:
-% pfiles     = cell array of P filenames { 'pfile1.7' 'pfile2.7' ... }
-% FreqPhaseAlign  = Perform frame-by-frame frequency and phase alignment of spectra and
-% Reject pairs of frames based if phase or freq > 3*stdev
-%              0=NO, 1=YES
-
+% pfiles         = cell array of P filenames { 'pfile1.7' 'pfile2.7' ... }
+% waterfile      = separate file for water data (optional)
+% SuppressOutput = 1: don't output figure to screen (only to file)
 
 % 091201: Dec 09.  Initial version, based on Richard's code
 % 100301: March 10.
@@ -66,7 +63,13 @@ end
 
 
 MRS_struct.pfile=temppfile;
-if(nargin > 1)
+
+if(nargin == 1) % pfilename only  - assume ShowOutput
+    ShowOutput = 1;
+end
+    
+
+if(nargin > 2)
     MRS_struct.waterfile = waterfile;
     MRS_struct.Reference_compound='H2O';
 else
@@ -743,7 +746,12 @@ for ii=1:numpfiles
         if(ishandle(101))
             close(101)
         end
+        
         h=figure(101);
+        if(ShowOutput==0)
+            set(h,'Visible','off');
+        end;
+        
         figTitle = ['GannetLoad Output'];
         set(gcf,'Name',figTitle,'Tag',figTitle, 'NumberTitle','off');
         

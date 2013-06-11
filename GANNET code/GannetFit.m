@@ -1,4 +1,4 @@
-function [MRS_struct] = GannetFit(MRS_struct)
+function [MRS_struct] = GannetFit(MRS_struct, ShowOutput)
 %function [MRS_struct] = MRSGABAfit(MRS_struct)
 %
 % Keep input and output structure names the same to add output data to
@@ -34,6 +34,9 @@ function [MRS_struct] = GannetFit(MRS_struct)
 %111214 integrating CJE's changes on water fitting (pre-init and revert to
 %linear bseline). Also investigating Navg(ii)
 
+if(nargin == 1) %  assume ShowOutput
+    ShowOutput = 1;
+end
 
 
 FIT_LSQCURV = 0;
@@ -186,6 +189,10 @@ for ii=1:numscans
     end
     fignum = 102;
     h=figure(fignum);
+    if(ShowOutput==0)
+            set(h,'Visible','off');
+    end;
+          
     figTitle = ['GannetFit Output'];
     set(gcf,'Name',figTitle,'Tag',figTitle, 'NumberTitle','off');
     % GABA plot
@@ -290,6 +297,11 @@ for ii=1:numscans
             % water
             fignum = 102;
             h=figure(fignum);
+             if(ShowOutput==0)
+               set(h,'Visible','off');
+              end;
+           
+            
             figTitle = ['GannetFit Output'];
             set(gcf,'Name',figTitle,'Tag',figTitle, 'NumberTitle','off');
             [LGModelParam(ii,:),residual(ii), residw] = lsqcurvefit(@(xdummy,ydummy) ...
