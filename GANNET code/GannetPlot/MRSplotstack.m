@@ -19,7 +19,7 @@ specbaseline = mean(real(SpectraToPlot(:,17250:17650)),2);
 gabaheight = abs(max(SpectraToPlot(:,17250:18000),[],2));
 gabaheight = mean(gabaheight);
 
-plotstackoffset = [ 0 : (numspec-1) ]';
+plotstackoffset = - [ 0 : (numspec-1) ]';
 plotstackoffset = plotstackoffset * gabaheight;
 plotstackoffset = plotstackoffset - specbaseline;
 
@@ -34,8 +34,10 @@ legendtxt = regexprep(MRS_struct.pfile, '_','-');
 set(gca,'XDir','reverse');
 oldaxis = axis;
 % yaxis max = top spec baseline + 2*meangabaheight
-yaxismax = (numspec + 2) *gabaheight; % top spec + 2* height of gaba
-yaxismin =  - 2* gabaheight; % extend 2* gaba heights below zero
+yaxismax = 2 *gabaheight; % top spec + 2* height of gaba
+yaxismin =  - ( 2 + numspec) * gabaheight; % extend 2* gaba heights below zero
+
+
 
 axis([0 5  yaxismin yaxismax])
 
