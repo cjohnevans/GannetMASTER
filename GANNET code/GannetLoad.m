@@ -740,7 +740,9 @@ for ii=1:numpfiles
         MRS_struct.phase(ii) = 0; % initial zeroth order phase
         MRS_struct.phase_firstorder(ii) = 0; % initial 1st order phase
         MRS_struct.FreqPhaseAlign = FreqPhaseAlign; %frame-by-frame f align
-        MRS_struct.EvenFrames = EvenFramesFTrealign;
+        MRS_struct.OddFrames = OddFramesFT;
+        MRS_struct.EvenFrames = EvenFramesFT;
+        
         MRS_struct.Rejects(ii) = numreject;
         
         if(ishandle(101))
