@@ -28,7 +28,7 @@ SpectraToPlot = SpectraToPlot + ...
     repmat(plotstackoffset, [ 1  length(MRS_struct.gabaspec(1,:))]);
 
 MRS_struct.pfile{specno}
-figure(99)
+%figure(99)
 plot(MRS_struct.freq, real(SpectraToPlot));
 legendtxt = regexprep(MRS_struct.pfile{specno}, '_','-');
 
